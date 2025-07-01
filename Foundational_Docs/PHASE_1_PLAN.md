@@ -1,65 +1,60 @@
-# Phase 1 Execution Plan: MVP Foundation
+# Phase 1 Execution Plan: The Autonomous Commenting Agent (MVP)
 
-> **Document Purpose**: This document provides a detailed engineering plan for the successful execution of Phase 1, as outlined in the Master PRD. It translates the strategic objective into concrete tasks and deliverables.
-
----
-
-## 1. Phase 1 Objective
-
-To build the core data ingestion and content generation capabilities of the platform. This includes a robust web crawler to discover target blogs and a foundational AI service to generate contextually relevant comments. This phase lays the groundwork for all subsequent intelligence and submission features.
-
-*   **Timeline**: Month 1
-*   **PRD Success Metrics**:
-    *   Crawler capacity: ≥ 100 blogs/hour.
-    *   Comment validity: ≥ 80% of generated comments are contextually valid and pass a basic quality check.
+This document outlines the deliverables for building the Minimum Viable Product (MVP) of the SEO Commenting Agent. The architecture is centered around an autonomous agent that uses a set of tools to achieve a high-level goal.
 
 ---
 
-## 2. Key Deliverables & Task Breakdown
+## 1. MVP Goal
 
-### Deliverable 1: Discovery Crawler Service
+To build a foundational agent capable of executing a mission from start to finish: **Given a topic, find a relevant blog post, analyze its content, and draft a high-quality, relevant comment.**
 
-*   **Description**: A microservice responsible for discovering and scraping content from target blogs.
+---
+
+## 2. Core Architecture
+
+The system will be built around three core concepts:
+
+*   **Agent Core**: The reasoning loop (powered by LangChain and Google Gemini) that decides what to do next.
+*   **Toolbelt**: A collection of Python functions (Tools) that the agent can choose to execute. Examples: `search_the_web`, `scrape_a_webpage`, `draft_a_comment`.
+*   **Memory**: A mechanism for the agent to persist its findings and the results of its actions, using our PostgreSQL database.
+
+---
+
+## 3. Phase 1 Deliverables
+
+### Deliverable 1: Agent & Tooling Foundation
+
+*   **Description**: Create the foundational scaffolding for the agent and its tools.
 *   **Tasks**:
-    1.  **Scaffolding & Environment Setup**:
-        *   [ ] Initialize a new FastAPI service directory (`app/services/crawler`).
-        *   [ ] Configure Playwright with necessary browser dependencies within a dedicated Docker container.
-        *   [ ] Establish and verify database connectivity to the PostgreSQL instance.
-    2.  **Data Modeling & Migrations**:
-        *   [ ] Implement SQLAlchemy models for `blogs` and `blog_posts` tables as per the PRD schema.
-        *   [ ] Generate and apply Alembic migration scripts for the initial schema.
-    3.  **Crawler Logic**:
-        *   [ ] Develop logic to ingest a list of seed URLs from a configuration file or database table.
-        *   [ ] Implement the core Playwright script to navigate, extract post links, and scrape article content.
-        *   [ ] Design a basic queuing mechanism using RabbitMQ to manage crawling jobs asynchronously.
-    4.  **Data Persistence**:
-        *   [ ] Create a repository pattern (`app/core/repositories`) to handle saving scraped `blogs` and `blog_posts` data to PostgreSQL.
-        *   [ ] Implement logic to avoid duplicate post entries.
+    *   [ ] Create a new `app/agents` directory for all agent-related logic.
+    *   [ ] Implement the main agent executor using LangChain, configured with the Gemini model.
+    *   [ ] Define a base `Tool` class or interface to ensure all tools have a consistent structure.
+    *   [ ] Create a `toolbelt.py` file to register and hold all available tools.
 
-### Deliverable 2: Basic Gemini Comment Generator Service
+### Deliverable 2: Essential Tool Development
 
-*   **Description**: A microservice that uses Google Gemini to generate comments based on scraped blog content.
+*   **Description**: Build the initial set of tools the agent needs to accomplish its MVP goal.
 *   **Tasks**:
-    1.  **Service Scaffolding**:
-        *   [ ] Initialize a new FastAPI service directory (`app/services/generator`).
-        *   [ ] Implement secure loading of the Google Gemini API key from AWS Secrets Manager (or `.env` for local).
-    2.  **Prompt Engineering (v1)**:
-        *   [ ] Implement the initial `analysis_prompt` and `generation_prompt` templates as defined in the master PRD.
-        *   [ ] Create Pydantic models to structure prompt inputs and validate expected outputs from the AI.
-    3.  **Core Generation Logic**:
-        *   [ ] Implement a function that takes `blog_post` content, constructs the appropriate prompt, and calls the Google Gemini API.
-        *   [ ] Add robust error handling for API failures, timeouts, or malformed responses.
-    4.  **API Endpoint & Persistence**:
-        *   [ ] Expose a RESTful endpoint (e.g., `POST /api/v1/generate_comment`) that accepts a `post_id`.
-        *   [ ] Implement the logic to fetch post content, trigger the generation workflow, and save the result to the `comments` table with a `pending_review` status.
+    *   [ ] **`web_search_tool`**: Implement a tool that uses the DuckDuckGo Search API to find relevant blog posts for a given topic.
+    *   [ ] **`scrape_website_tool`**: Implement a tool that uses Playwright to scrape the full text content of a given URL.
+    *   [ ] **`summarize_content_tool`**: Implement a tool that takes a large piece of text (scraped content) and uses Gemini to extract the key arguments and tone.
+    *   [ ] **`draft_comment_tool`**: Implement a tool that takes the content summary and a goal, and uses Gemini to write a high-quality draft comment.
+
+### Deliverable 3: API & Persistence
+
+*   **Description**: Expose the agent via an API endpoint and ensure its work is saved.
+*   **Tasks**:
+    *   [ ] Create a new `Mission` model in `models.py` to track agent runs (e.g., goal, status, logs, results).
+    *   [ ] Create a new API endpoint `POST /api/v1/missions` that accepts a goal (e.g., `{"goal": "Write a comment about Python decorators"}`).
+    *   [ ] This endpoint will initialize the agent and start its execution loop in the background.
+    *   [ ] Implement logic to save the agent's thoughts, actions, and final result to the `Mission` and `Comment` tables.
 
 ---
 
-## 3. Definition of Done for Phase 1
+## 4. Definition of Done for Phase 1
 
 *   [ ] All code is peer-reviewed, formatted, and merged into the `develop` branch.
-*   [ ] Unit tests achieve >80% code coverage for all new services and repositories.
-*   [ ] The crawler can successfully process a seed list of 20 sample blogs and persist the data correctly.
-*   [ ] The generator API successfully creates valid comments for at least 15 of the 20 scraped posts.
-*   [ ] A live demonstration of the end-to-end flow (Crawl → Generate → View in DB) is successfully presented to stakeholders.
-*   [ ] All infrastructure changes are codified in Docker and `docker-compose.yml`.
+*   [ ] Unit tests achieve >80% code coverage for all new tools and agent components.
+*   [ ] The agent can successfully complete a full mission when triggered by the API endpoint.
+    *   Example: `POST /api/v1/missions` with goal `"Find a recent blog post about FastAPI and write a thoughtful comment."`
+*   [ ] The agent's final drafted comment is successfully saved to the `comments` table with a `pending_review` status.

@@ -9,6 +9,10 @@ psycopg2-binary
 
 # AI
 google-generativeai
+langchain
+langchain-google-genai
+langchain-community
+duckduckgo-search
 
 # Utilities
 python-dotenv

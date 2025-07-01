@@ -24,6 +24,21 @@ class BlogPost(Base):
 
     comments = relationship("Comment", back_populates="blog_post")
 
+class MissionStatus(enum.Enum):
+    pending = "pending"
+    in_progress = "in_progress"
+    completed = "completed"
+    failed = "failed"
+
+class Mission(Base):
+    __tablename__ = 'missions'
+    id = Column(Integer, primary_key=True, index=True)
+    goal = Column(Text, nullable=False)
+    status = Column(Enum(MissionStatus), default=MissionStatus.pending, nullable=False)
+    result = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
 class CommentStatus(enum.Enum):
     pending_review = "pending_review"
     approved = "approved"

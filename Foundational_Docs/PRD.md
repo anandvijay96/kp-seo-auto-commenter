@@ -32,30 +32,33 @@ Manual blog outreach is slow, inconsistent, and prone to spam flags. A scalable,
 
 ---
 
-## 4. Core Functional Workflow
+## 4. Core Functional Workflow: The Agentic Approach
+
+The system operates as an autonomous agent with a high-level goal. Instead of a rigid pipeline, the agent uses a toolbelt and a reasoning loop to complete its mission.
+
 | **Step** | **Description** |
 |---------|-----------------|
-| **1. Blog Discovery** | Curated domain list + automated crawler (DA > 30 & PA > 30) using Playwright & Moz/Ahrefs APIs. |
-| **2. Content Analysis** | Google Gemini extracts key points, tone, and audience; builds a context map. |
-| **3. Comment Generation** | AI crafts unique, 100-150-word comments with natural CTAs referencing KloudPortal services. |
-| **4. Compliance & Quality** | Pre-submission checklist (tone, length, no-spam) + ethical guardrails. |
-| **5. Submission Engine** | Human-like rate limiting and form-filling across 10+ CMS platforms. |
-| **6. Analytics & Feedback** | Real-time success metrics, ROI tracking, and reinforcement learning for comment optimization. |
+| **1. Mission Assignment** | The agent is given a high-level goal, e.g., "Find a recent blog post about Python decorators and write a thoughtful comment." |
+| **2. Tool Selection & Execution** | The agent uses its reasoning engine (Gemini + LangChain) to select and use the best tool from its toolbelt. It might first use a `web_search_tool` to find URLs. |
+| **3. Observation & Thought** | After executing a tool, the agent observes the result (e.g., a list of links) and thinks about the next best action. It might then decide to use its `scrape_website_tool`. |
+| **4. Iterative Execution** | The agent continues this loop—thinking and executing tools—until it has gathered enough information to draft a comment. |
+| **5. Final Output** | The agent uses its `draft_comment_tool` to generate the final output and saves it to the database for review. |
 
 ---
 
-## 5. Technical Stack (Local ▶️ AWS Production)
-| Layer | Local Development | Production |
-|-------|------------------|------------|
-| **Frontend** | React + Vite (TS) | React static build on Amazon CloudFront |
-| **Backend API** | FastAPI + Uvicorn | FastAPI in AWS Lambda (via AWS API Gateway) |
-| **Database** | PostgreSQL (Docker) | Amazon RDS PostgreSQL |
+## 5. Technical Stack
+
+| **Component** | **Local / Development** | **Production (AWS)** |
+|---|---|---|
+| **Web Framework** | FastAPI (uvicorn) | FastAPI (on ECS Fargate) |
+| **Agent Framework** | LangChain | LangChain |
+| **AI/NLP** | Google Gemini API (Free Tier) | Google Gemini API (Pro) |
+| **Database** | PostgreSQL (Docker) | Amazon RDS for PostgreSQL |
 | **Cache** | Redis (Docker) | Amazon ElastiCache Redis |
 | **Queue** | RabbitMQ (Docker) | Amazon SQS + SNS |
 | **Search** | Elasticsearch (Docker) | Amazon OpenSearch |
 | **Object Storage** | Local FS | Amazon S3 |
 | **Scraping** | Playwright | Playwright Cluster w/ rotating proxies (EC2) |
-| **AI/NLP** | Google Gemini API (Free Tier) | Google Gemini API (Pro) |
 | **Observability** | Prometheus + Grafana | DataDog + CloudWatch |
 | **CI/CD** | GitHub Actions | GitHub Actions ▶ ECR ▶ ECS Fargate |
 
@@ -112,16 +115,25 @@ CREATE TABLE comments (
 
 ## 7. Microservices Architecture (ASCII)
 ```
-┌──────────────┐       ┌──────────────┐       ┌──────────────┐
-│  Frontend    │─HTTP─▶│ API Gateway  │─RPC─▶│  Worker PODs │
-└──────────────┘       └──────────────┘       └─────┬────────┘
-                        ▲   ▲   ▲                  │  
-                        │   │   └─▶ Elasticsearch  │
-                        │   └─────▶ Redis Cache    │
-                        └─────────▶ RDS Postgres   │
-                                                ┌──▼───┐
-                                                │ S3   │
-                                                └──────┘
+┌─────────────────────────────────────────────────────┐
+│                    API Gateway                       │
+│                 (Kong / AWS API GW)                 │
+└─────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────┐
+│             SEO Commenting Agent Service            │
+│         (FastAPI + LangChain + Gemini)              │
+└─────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────┐
+│                       Toolbelt                      │
+│  (Web Search, Scraper, Summarizer, Draft Comment)   │
+└─────────────────────────────────────────────────────┘
+                            │
+┌─────────────────────────────────────────────────────┐
+│                  Shared Services Bus                  │
+│        (PostgreSQL, Redis, RabbitMQ, S3)            │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -129,11 +141,11 @@ CREATE TABLE comments (
 ## 8. Development Phases & Milestones
 | **Phase** | **Timeline** | **Key Deliverables** | **Success Metrics** |
 |-----------|-------------|----------------------|--------------------|
-| **P1 – MVP** | Month 1 | Discovery crawler & basic Gemini comment generator | 100 blogs/hr crawl capacity; 80 % valid comments |
-| **P2 – Intelligence Layer** | Month 2 | Context mapping, template engine | 90 % topic relevance |
-| **P3 – Submission Engine** | Month 3 | Multi-platform form handler w/ rate limiting | < 1 % spam flags |
-| **P4 – Analytics Dashboard** | Month 4 | React analytics portal & ETL pipeline | ROI metrics within ±5 % accuracy |
-| **P5 – AWS Production Launch** | Month 5 | IaC (Terraform), CI/CD, monitoring | 99.9 % uptime, auto-scaling to 500 comments/day |
+| **P1 – MVP** | Month 1 | Autonomous Commenting Agent w/ basic toolbelt | Agent can complete a full mission; 80% of drafts are high quality |
+| **P2 – Advanced Tooling** | Month 2 | Tools for multi-platform submission, CAPTCHA handling | < 1% submission failure rate |
+| **P3 – Agent Memory & Learning** | Month 3 | Long-term memory via vector DB; self-correction loop | Agent success rate improves by 20% over time |
+| **P4 – Analytics & Human-in-the-Loop** | Month 4 | React dashboard for mission control & analytics | ROI metrics within ±5% accuracy |
+| **P5 – AWS Production Launch** | Month 5 | IaC (Terraform), CI/CD, monitoring | 99.9% uptime, auto-scaling to 500 comments/day |
 
 ---
 
