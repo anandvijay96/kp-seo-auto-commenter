@@ -1,0 +1,21 @@
+# Web Framework
+fastapi
+uvicorn[standard]
+
+# Database & ORM
+sqlalchemy
+alembic
+psycopg2-binary
+
+# AI
+google-generativeai
+
+# Utilities
+python-dotenv
+pydantic
+pydantic-settings
+requests
+
+# Web Scraping
+playwright
+beautifulsoup4
