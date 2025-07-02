@@ -25,15 +25,15 @@ def get_gemini_model():
         system_instruction="You are a helpful AI assistant."
     )
 
-def stream_gemini_response(messages):
+async def stream_gemini_response(messages):
     """
-    Calls the Gemini API with streaming enabled and yields response chunks.
+    Calls the Gemini API with streaming enabled and yields response chunks asynchronously.
     """
     try:
         model = get_gemini_model()
-        # stream=True makes generate_content return a generator
-        response_stream = model.generate_content(messages, stream=True)
-        for chunk in response_stream:
+        # Use generate_content_async for asynchronous streaming
+        response_stream = await model.generate_content_async(messages, stream=True)
+        async for chunk in response_stream:
             # Ensure that we only yield non-empty text parts
             if chunk.text:
                 yield chunk.text

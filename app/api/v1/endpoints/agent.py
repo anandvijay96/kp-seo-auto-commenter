@@ -18,7 +18,7 @@ async def stream_agent_response(data: Dict) -> AsyncGenerator[str, None]:
     except Exception as e:
         # In a real-world scenario, you'd want more robust error logging here.
         # For now, we'll just yield an error message.
-        yield f"Error: {str(e)}"
+        yield f"DEPLOYMENT_CHECK_V3 - Error: {str(e)}"
 
 @router.post("/run")
 async def run_agent(data: Dict):

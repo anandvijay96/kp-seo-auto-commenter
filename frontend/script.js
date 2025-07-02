@@ -28,6 +28,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
+            // Handle cases where the backend might send a JSON error instead of a stream
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                const errorData = await response.json();
+                console.error("Received JSON instead of stream:", errorData);
+                const errorMessage = errorData.detail || JSON.stringify(errorData);
+                appendMessage(`An error occurred: ${errorMessage}`, 'ai', true);
+                hideTypingIndicator();
+                return;
+            }
+
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let aiMessageContainer = appendMessage('', 'ai');
