@@ -1,29 +1,38 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 from app.api.v1.api import api_router
 from app.core.config import settings
 print("ENVIRONMENT:", settings.ENVIRONMENT)
 
 app = FastAPI(
-    title="KloudPortal SEO Blog Automator",
+    title=settings.PROJECT_NAME,
     description="API for managing blog discovery, comment generation, and submission.",
     version="0.1.0",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Mount the 'frontend' directory to serve static files like CSS and JS
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+# Add a root endpoint to serve the index.html file
+@app.get("/", response_class=FileResponse)
+async def read_root():
+    return "frontend/index.html"
 
 # Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
-    allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
-)
+if settings.BACKEND_CORS_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],  # Allows all methods
+        allow_headers=["*"],  # Allows all headers
+    )
 
 app.include_router(api_router, prefix="/api/v1")
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the KloudPortal SEO API"}
 
 @app.get("/health", status_code=200)
 def health_check():
