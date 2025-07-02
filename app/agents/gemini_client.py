@@ -1,14 +1,13 @@
 import os
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from app.core.config import settings
 
-
-# Configure Gemini API key (supports both GOOGLE_API_KEY and GEMINI_API_KEY)
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
-if not api_key:
+# Configure the Gemini client with the API key from settings
+if not settings.GEMINI_API_KEY:
     raise ValueError("Google Gemini API key not set in environment.")
 
-genai.configure(api_key=api_key)
+genai.configure(api_key=settings.GEMINI_API_KEY)
 
 # Set up the Gemini model for free tier
 GEMINI_MODEL = "gemini-1.5-flash-latest"
@@ -25,7 +24,7 @@ def get_gemini_model():
         system_instruction="You are a helpful AI assistant."
     )
 
-async def stream_gemini_response(messages):
+async def stream_gemini_response(messages: list):
     """
     Calls the Gemini API with streaming enabled and yields response chunks asynchronously.
     """

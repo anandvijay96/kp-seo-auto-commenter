@@ -17,11 +17,11 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
+    # Gemini API
+    GEMINI_API_KEY: str
+
     # RabbitMQ
     RABBITMQ_USER: Optional[str] = None
     RABBITMQ_PASS: Optional[str] = None
-
-    # Google Gemini
-    GEMINI_API_KEY: str
 
 settings = Settings()

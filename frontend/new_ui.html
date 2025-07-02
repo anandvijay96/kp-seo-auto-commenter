@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KloudePortal SEO - New UI Concept</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/assets/css/all.min.css" />
+    <style>
+      :root {
+        --primary-color: #631e50;
+        --primary-color-hover: #4a163c;
+      }
+
+      /* Custom styles for rendered Markdown */
+      .prose-styles p:last-child {
+        margin-bottom: 0;
+      }
+      .prose-styles ol,
+      .prose-styles ul {
+        padding-left: 1.5rem;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .prose-styles ol {
+        list-style-type: decimal;
+      }
+      .prose-styles ul {
+        list-style-type: disc;
+      }
+      .prose-styles li {
+        margin-bottom: 0.25rem;
+      }
+      .prose-styles a {
+        color: #4f46e5; /* A nice blue for links */
+        text-decoration: underline;
+      }
+      .prose-styles a:hover {
+        color: #4338ca;
+      }
+
+      /* Typing indicator animation */
+      .typing-indicator span {
+        animation: blink 1.4s infinite both;
+      }
+      .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+      .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+      @keyframes blink {
+        0%,
+        80%,
+        100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .chat-message {
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      /* New styles for the loading animation */
+      .status-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .loading-animation {
+        width: 24px;
+        height: 24px;
+        position: relative;
+      }
+      .loading-animation svg {
+        width: 100%;
+        height: 100%;
+      }
+      .status-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: #4b5563;
+      }
+      .code-wrapper {
+        position: relative;
+        margin-top: 8px;
+      }
+      .code-container {
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        overflow: hidden;
+        width: 100%;
+        height: 84px; /* 3 lines * 28px */
+        position: relative;
+        scroll-behavior: smooth;
+        background-color: #f3f4f6; /* Added a light background */
+        border-radius: 4px;
+        padding-top: 4px; /* Add some padding */
+      }
+      .code-line {
+        display: flex;
+        height: 28px;
+        align-items: center;
+        padding: 0 8px;
+      }
+      .line-number {
+        color: #9ca3af;
+        padding-right: 12px;
+        user-select: none;
+        width: 24px;
+        text-align: right;
+      }
+      .line-content {
+        color: #1f2937;
+        flex: 1;
+        margin-left: 4px;
+      }
+      .gradient-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        border-radius: 8px;
+        background: linear-gradient(
+          to bottom,
+          rgba(243, 244, 246, 0.9) 0%,
+          rgba(243, 244, 246, 0.5) 30%,
+          transparent 100%
+        );
+      }
+
+      @keyframes rotate-cw {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes rotate-ccw {
+        from { transform: rotate(360deg); }
+        to { transform: rotate(0deg); }
+      }
+      .g-spin circle {
+        transform-origin: 120px 120px;
+      }
+      .g-spin circle:nth-child(1) { animation: rotate-cw 8s linear infinite; }
+      .g-spin circle:nth-child(2) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.2s; }
+      .g-spin circle:nth-child(3) { animation: rotate-cw 8s linear infinite; animation-delay: 0.3s; }
+      .g-spin circle:nth-child(4) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.1s; }
+      .g-spin circle:nth-child(5) { animation: rotate-cw 8s linear infinite; animation-delay: 0.3s; }
+      .g-spin circle:nth-child(6) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.2s; }
+
+      /* Additional styles for standalone loading container */
+      .standalone-loading-container {
+        background-color: #f9fafb;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin: 1rem 0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .loading-indicator-header {
+        font-weight: 500;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 flex items-center justify-center min-h-screen font-sans"
+  >
+    <div
+      class="w-full max-w-2xl h-[700px] flex flex-col bg-white rounded-2xl shadow-2xl border border-gray-200"
+    >
+      <!-- Header -->
+      <div class="p-4 border-b border-gray-200 text-center">
+        <img
+          src="/static/assets/logo.png"
+          alt="Logo"
+          class="h-16 w-auto mx-auto mb-2"
+        />
+        <h1 class="text-xl font-bold text-gray-800">
+          KloudPortal SEO Blog Automator
+        </h1>
+        <p class="text-sm text-gray-500">
+          Your AI-powered content creation assistant
+        </p>
+      </div>
+
+      <!-- Chat Messages -->
+      <div id="chat-container" class="flex-1 p-6 overflow-y-auto space-y-4">
+        <!-- Example AI Message -->
+        <div class="chat-message flex items-start gap-3">
+          <div
+            class="w-8 h-8 bg-[var(--primary-color)] text-white flex items-center justify-center rounded-full font-bold text-sm"
+          >
+            AI
+          </div>
+          <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
+            <p>
+              Hello! How can I help you create amazing blog content today? You
+              can provide a topic or a URL to analyze.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="p-4 border-t border-gray-200">
+        <div
+          id="url-input-container"
+          class="hidden mb-2 transition-all duration-300"
+        >
+          <input
+            type="url"
+            id="blog-url"
+            class="w-full p-2 border border-gray-300 rounded-md text-sm"
+            placeholder="https://example.com/blog-post"
+          />
+        </div>
+        <div
+          class="bg-white border border-gray-300 rounded-xl p-2 flex items-center gap-2"
+        >
+          <button
+            class="p-2 text-gray-500 hover:text-[var(--primary-color)] rounded-full transition-colors"
+          >
+            <i class="fas fa-paperclip"></i>
+          </button>
+          <button
+            id="url-toggle-btn"
+            class="flex items-center gap-2 p-2 text-gray-600 hover:text-[var(--primary-color)] rounded-full transition-colors bg-gray-100 hover:bg-gray-200"
+          >
+            <i class="fas fa-globe"></i>
+            <span class="text-sm font-medium">Scrape URL</span>
+          </button>
+          <textarea
+            id="chat-input"
+            class="flex-1 p-2 bg-transparent resize-none focus:outline-none"
+            rows="1"
+            placeholder="Enter a topic or task..."
+          ></textarea>
+          <button
+            id="generate-btn"
+            class="p-2 text-gray-500 hover:text-[var(--primary-color)] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const textarea = document.getElementById("chat-input");
+        const urlToggleBtn = document.getElementById("url-toggle-btn");
+        const urlInputContainer = document.getElementById(
+          "url-input-container"
+        );
+
+        // Auto-resize textarea logic
+        const minHeight = 40; // Set a fixed min-height for the container
+        textarea.addEventListener("input", () => {
+          textarea.style.height = "auto"; // Reset height
+          const newHeight = Math.max(minHeight, textarea.scrollHeight);
+          textarea.style.height = `${newHeight}px`;
+        });
+
+        // URL input toggle logic
+        urlToggleBtn.addEventListener("click", () => {
+          urlInputContainer.classList.toggle("hidden");
+        });
+
+        // --- Live Backend Chat Logic ---
+        const generateBtn = document.getElementById("generate-btn");
+        const chatContainer = document.getElementById("chat-container");
+        let conversationHistory = [];
+        let loadingInterval = null;
+
+        // --- New Animation Logic ---
+        const TASK_SEQUENCES = [
+          {
+            status: "Initializing",
+            lines: [
+              "Booting up AI agent...",
+              "Establishing secure connection...",
+              "Authenticating credentials...",
+              "Loading required modules...",
+              "Warming up neural networks...",
+            ],
+          },
+          {
+            status: "Processing Request",
+            lines: [
+              "Parsing user input...",
+              "Identifying key intent...",
+              "Querying knowledge base...",
+              "Cross-referencing sources...",
+              "Compiling data points...",
+            ],
+          },
+          {
+            status: "Scraping URL",
+            lines: [
+              "Initiating web scraper...",
+              "Fetching page content...",
+              "Parsing HTML structure...",
+              "Extracting main article...",
+              "Cleaning up text...",
+              "Analyzing content tone...",
+            ],
+          },
+          {
+            status: "Generating Response",
+            lines: [
+              "Structuring response outline...",
+              "Drafting initial version...",
+              "Compiling response draft...",
+              "Running quality checks...",
+              "Formatting output...",
+              "Finalizing for delivery...",
+            ],
+          },
+        ];
+
+        function startLoadingAnimation(loadingId, hasUrl) {
+          let sequenceIndex = 0;
+          let visibleLines = [];
+          let scrollPosition = 0;
+          const lineHeight = 28;
+
+          const codeContainer = document.getElementById(`code-container-${loadingId}`);
+          const linesContainer = document.getElementById(`lines-container-${loadingId}`);
+          const statusText = document.getElementById(`status-text-${loadingId}`);
+
+          // Only use scraping sequence for URL processing
+          const activeSequences = hasUrl
+            ? TASK_SEQUENCES.filter(s => s.status === "Scraping URL" || s.status === "Generating Response")
+            : TASK_SEQUENCES.filter(s => s.status !== "Scraping URL");
+
+          function renderLines() {
+            if (!linesContainer) return;
+            linesContainer.innerHTML = "";
+            visibleLines.forEach((line) => {
+              const lineDiv = document.createElement("div");
+              lineDiv.className = "code-line";
+              lineDiv.innerHTML = `
+                <div class="line-number">${line.number}</div>
+                <div class="line-content">${line.text}</div>
+              `;
+              linesContainer.appendChild(lineDiv);
+            });
+          }
+
+          function initializeSequence() {
+            if (!statusText) return;
+            const currentSequence = activeSequences[sequenceIndex];
+            const totalLines = currentSequence.lines.length;
+
+            statusText.textContent = currentSequence.status + "...";
+
+            visibleLines = [];
+            for (let i = 0; i < Math.min(3, totalLines); i++) {
+              visibleLines.push({
+                text: currentSequence.lines[i],
+                number: i + 1,
+              });
+            }
+
+            scrollPosition = 0;
+            if (codeContainer) codeContainer.scrollTop = 0;
+            renderLines();
+          }
+
+          function advanceLine() {
+            if (!codeContainer) {
+              stopLoadingAnimation();
+              return;
+            }
+
+            const currentSequence = activeSequences[sequenceIndex];
+            const totalLines = currentSequence.lines.length;
+            const firstVisibleLineIndex = Math.floor(scrollPosition / lineHeight);
+
+            const nextLineIndex = (firstVisibleLineIndex + 3) % totalLines;
+
+            if (scrollPosition + lineHeight >= totalLines * lineHeight) {
+              sequenceIndex = (sequenceIndex + 1) % activeSequences.length;
+              initializeSequence();
+              return;
+            }
+
+            scrollPosition += lineHeight / 4; 
+            codeContainer.scrollTop = scrollPosition;
+          }
+
+          initializeSequence();
+          loadingInterval = setInterval(advanceLine, 500); 
+        }
+
+        function stopLoadingAnimation() {
+          if (loadingInterval) {
+            clearInterval(loadingInterval);
+            loadingInterval = null;
+          }
+        }
+
+        const handleSendMessage = async () => {
+          const userInput = textarea.value.trim();
+          const blogUrl = document.getElementById("blog-url").value.trim();
+
+          if (!userInput && !blogUrl) return;
+
+          let userMessageForUI = userInput;
+          let agentTask = userInput;
+
+          // Update display and agent task if URL is provided
+          if (blogUrl) {
+            userMessageForUI = `Analyze this URL: ${blogUrl}\n\n${userInput}`;
+            agentTask = `URL: ${blogUrl}\n\nTask: ${userInput || "Please analyze this URL and provide insights."}`;
+          }
+
+          // Add user message to chat UI
+          const userMessageHtml = `
+                    <div class="chat-message flex items-start gap-3 justify-end">
+                        <div class="bg-[var(--primary-color)] text-white p-3 rounded-lg max-w-lg">
+                            <p>${userMessageForUI.replace(/\n/g, "<br>")}</p>
+                        </div>
+                    </div>`;
+          chatContainer.insertAdjacentHTML("beforeend", userMessageHtml);
+
+          textarea.value = "";
+          document.getElementById("blog-url").value = "";
+          urlInputContainer.classList.add("hidden");
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+          generateBtn.disabled = true;
+
+          const loadingId = `loading-${Date.now()}`;
+          let loadingHtml = "";
+          
+          // Only show loading animation for URL scraping
+          if (blogUrl) {
+            loadingHtml = `
+              <div id="${loadingId}" class="standalone-loading-container">
+                <div class="loading-indicator-header">
+                  <i class="fas fa-globe text-[var(--primary-color)]"></i>
+                  <span>Processing URL</span>
+                </div>
+                <div class="status-container">
+                  <div class="loading-animation">
+                    <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Loading progress">
+                      <title>Loading Progress Indicator</title>
+                      <defs>
+                        <mask id="progress-mask">
+                          <rect width="240" height="240" fill="black" />
+                          <circle cx="120" cy="120" r="110" fill="white" />
+                        </mask>
+                        <linearGradient id="g1" gradientTransform="rotate(90)">
+                          <stop offset="0%" stop-color="#4285F4" />
+                          <stop offset="100%" stop-color="#34A853" />
+                        </linearGradient>
+                        <linearGradient id="g2" gradientTransform="rotate(90)">
+                          <stop offset="0%" stop-color="#FBBC05" />
+                          <stop offset="100%" stop-color="#EA4335" />
+                        </linearGradient>
+                      </defs>
+                      <g class="g-spin" mask="url(#progress-mask)">
+                        <circle r="90" cx="120" cy="120" stroke="url(#g1)" stroke-width="20" />
+                        <circle r="90" cx="120" cy="120" stroke="url(#g2)" stroke-width="20" pathLength="1" stroke-dasharray="0.5 0.5" />
+                        <circle r="70" cx="120" cy="120" stroke="#FBBC05" opacity="0.95" />
+                        <circle r="50" cx="120" cy="120" stroke="#EA4335" opacity="0.95" />
+                        <circle r="70" cx="120" cy="120" stroke="#FFEB3B" opacity="0.95" />
+                        <circle r="50" cx="120" cy="120" stroke="#FF4081" opacity="0.95" />
+                      </g>
+                    </svg>
+                  </div>
+                  <span class="status-text" id="status-text-${loadingId}">Initializing...</span>
+                </div>
+                <div class="code-wrapper">
+                  <div class="code-container" id="code-container-${loadingId}">
+                    <div id="lines-container-${loadingId}"></div>
+                  </div>
+                  <div class="gradient-overlay"></div>
+                </div>
+              </div>`;
+
+            chatContainer.insertAdjacentHTML("beforeend", loadingHtml);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            startLoadingAnimation(loadingId, true);
+          }
+
+          const aiResponseId = `ai-response-${Date.now()}`;
+          
+          // We won't create the AI response container yet - we'll create it only when we get the response
+          const aiResponseContainerHtml = `
+                    <div class="chat-message flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <i class="fas fa-robot text-gray-600"></i>
+                        </div>
+                        <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
+                            <div id="${aiResponseId}" class="prose-styles"></div>
+                        </div>
+                    </div>`;
+
+          let aiResponseContainer = null;
+          const aiMessageElementId = `#${aiResponseId}`;
+
+          try {
+            let endpoint = "/api/v1/agent/run";
+            let body = {
+                task: agentTask,
+                history: conversationHistory,
+            };
+
+            if (blogUrl) {
+                endpoint = "/api/v1/scraper/scrape-and-run";
+                body = { url: blogUrl, task: agentTask, history: conversationHistory };
+            }
+
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body),
+            });
+
+            // Stop and remove loading animation
+            stopLoadingAnimation();
+            const loadingElement = document.getElementById(loadingId);
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+
+            // Only now add the AI response container, after removing loading animation
+            chatContainer.insertAdjacentHTML("beforeend", aiResponseContainerHtml);
+            aiResponseContainer = document.querySelector(aiMessageElementId);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            if (!response.ok || !response.body) {
+              aiResponseContainer.textContent =
+                "Error: Could not get a response from the server.";
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let fullResponse = "";
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value, { stream: true });
+              fullResponse += chunk;
+              if (fullResponse.startsWith("Gemini API error:")) {
+                aiResponseContainer.innerHTML = `<p>I'm sorry, I encountered a technical issue from the AI service. Please try your request again.</p><p class="text-xs text-gray-500 mt-2">Details: ${fullResponse}</p>`;
+              } else {
+                aiResponseContainer.innerHTML = marked.parse(fullResponse);
+              }
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            conversationHistory.push({
+              user: agentTask,
+              ai: fullResponse,
+            });
+          } catch (error) {
+            console.error("Fetch error:", error);
+            stopLoadingAnimation();
+            if (document.getElementById(loadingId)) {
+              document.getElementById(loadingId).remove();
+            }
+
+            if (!aiResponseContainer) {
+              chatContainer.insertAdjacentHTML(
+                "beforeend",
+                aiResponseContainerHtml
+              );
+              aiResponseContainer = document.querySelector(aiMessageElementId);
+            }
+            aiResponseContainer.innerHTML = `<p>An error occurred while fetching the response. Please check the console for details.</p><p class="text-xs text-gray-500 mt-2">${error.message}</p>`;
+          } finally {
+            generateBtn.disabled = false;
+          }
+        };
+
+        generateBtn.addEventListener("click", handleSendMessage);
+
+        textarea.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -3,30 +3,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const chatInput = document.getElementById("chat-input");
   const chatWindow = document.getElementById("chat-window");
   const typingIndicator = document.getElementById("typing-indicator");
+  const blogUrlInput = document.getElementById("blog-url");
   let conversationHistory = [];
 
   chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const message = chatInput.value.trim();
+    const url = blogUrlInput.value.trim();
+
     if (!message) return;
 
     appendMessage(message, "user");
     chatInput.value = "";
+    blogUrlInput.value = ""; // Clear URL input as well
     chatInput.style.height = "auto"; // Reset height
 
     showTypingIndicator();
 
     try {
-      const response = await fetch(
-        "https://kp-seo-auto-commenter.onrender.com/api/v1/agent/run",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ task: message, history: conversationHistory }),
-        }
-      );
+      let endpoint = "/api/v1/agent/run";
+      let body = { task: message, history: conversationHistory };
+
+      if (url) {
+        endpoint = "/api/v1/scraper/scrape-and-run";
+        body = { url: url, task: message, history: conversationHistory };
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);

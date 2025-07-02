@@ -17,10 +17,15 @@ app = FastAPI(
 # Mount the 'frontend' directory to serve static files like CSS and JS
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+# Add a new endpoint to serve the new_ui.html file
+@app.get("/new-ui")
+async def read_new_ui():
+    return FileResponse('frontend/new_ui.html')
+
 # Add a root endpoint to serve the index.html file
 @app.get("/", response_class=FileResponse)
-async def read_root():
-    return "frontend/index.html"
+async def read_index():
+    return FileResponse("frontend/index.html")
 
 # Add CORS middleware
 if settings.BACKEND_CORS_ORIGINS:
