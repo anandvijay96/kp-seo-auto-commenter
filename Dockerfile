@@ -41,6 +41,9 @@ COPY --from=builder /opt/venv /opt/venv
 # Set path to use the virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 
+# Copy Playwright browser cache from builder stage
+COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
+
 # Copy application code
 COPY ./app /app/app
 COPY ./frontend /app/frontend
