@@ -1,33 +1,28 @@
 from fastapi import APIRouter, HTTPException
-from typing import Dict
+from fastapi.responses import StreamingResponse
+from typing import Dict, AsyncGenerator
 from app.agents.base import Agent
 from app.agents.toolbelt import get_tools
 
 router = APIRouter()
 
-@router.post("/run")
-async def run_agent(data: Dict) -> Dict:
+async def stream_agent_response(data: Dict) -> AsyncGenerator[str, None]:
     """
-    Run the agent with the provided input data.
-    
-    Args:
-        data: Input data for the agent to process
-            - task: The type of task to perform
-            - parameters: Any additional parameters needed for the task
-    
-    Returns:
-        Dict: Response containing task status and results
+    Runs the agent and streams the response back chunk by chunk.
     """
     try:
-        # Initialize the agent with available tools
         agent = Agent(tools=get_tools())
-        
-        # Run the agent with the provided data
-        result = await agent.run(data)
-        
-        return {
-            "status": "success",
-            "result": result
-        }
+        # The agent's run method is now expected to be an async generator
+        async for chunk in agent.run(data):
+            yield chunk
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # In a real-world scenario, you'd want more robust error logging here.
+        # For now, we'll just yield an error message.
+        yield f"Error: {str(e)}"
+
+@router.post("/run")
+async def run_agent(data: Dict):
+    """
+    Run the agent with the provided input data and stream the results.
+    """
+    return StreamingResponse(stream_agent_response(data), media_type="text/event-stream")

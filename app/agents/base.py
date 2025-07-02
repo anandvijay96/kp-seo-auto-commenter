@@ -1,10 +1,11 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain_core.prompts import PromptTemplate
+from typing import AsyncGenerator, Dict
 
 from app.core.config import settings
 from .toolbelt import get_tools
-from app.agents.gemini_client import get_gemini_response
+from app.agents.gemini_client import stream_gemini_response
 
 # This is a standard ReAct (Reasoning and Acting) prompt template.
 # It instructs the agent on how to think, act, and observe.
@@ -62,19 +63,13 @@ class Agent:
         self.tools = tools or get_tools()
         self.agent_executor = create_agent_executor()
     
-    async def run(self, data: dict) -> dict:
-    # ... (mock logic for test environment)
+    async def run(self, data: dict) -> AsyncGenerator[str, None]:
+        # In a test environment, yield a single mock response chunk and exit.
         if settings.ENVIRONMENT == "test":
-            return {
-                "status": "success",
-                "result": {
-                    "status": "success",
-                    "output": "This is a mock response for testing"
-                },
-                "response": "This is a mock response for testing"
-            }
+            yield "This is a mock response for testing."
+            return
 
-    # Prepare messages for Gemini API
+        # Prepare messages for Gemini API
         user_message = data.get("task", "")
         conversation_history = data.get("history", [])
 
@@ -86,12 +81,6 @@ class Agent:
                 messages.append({"role": "model", "parts": [entry.get("ai")]})
         messages.append({"role": "user", "parts": [user_message]})
 
-        # Get Gemini response
-        output = get_gemini_response(messages)
-        return {
-            "status": "success",
-            "result": {
-                "status": "success",
-                "output": output
-            }
-        }
+        # Stream the response from the Gemini client
+        async for chunk in stream_gemini_response(messages):
+            yield chunk

@@ -8,18 +8,27 @@
 </head>
 <body>
     <div class="container">
-        <h1>KloudPortal SEO Blog Automator</h1>
-        <p>Enter a topic below and the AI agent will generate a blog post for you.</p>
-        <div class="form-container">
-            <textarea id="task-input" placeholder="e.g., The future of renewable energy"></textarea>
-            <button id="run-agent-btn">Generate</button>
+        <div class="header">
+            <h1>KloudPortal SEO Blog Automator</h1>
+            <p>Enter a topic below and the AI agent will generate a blog post for you.</p>
         </div>
-        <div id="loading-indicator" class="hidden">Generating...</div>
-        <div id="result-container">
-            <h2>Generated Content</h2>
-            <pre id="result-output"></pre>
+
+        <div id="chat-container" class="chat-container">
+            <div id="chat-window" class="chat-window"></div>
+            <div id="typing-indicator" class="typing-indicator hidden">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
         </div>
+
+        <form id="chat-form" class="chat-form">
+            <textarea id="chat-input" placeholder="Enter a blog topic..." required></textarea>
+            <button type="submit">Generate</button>
+        </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

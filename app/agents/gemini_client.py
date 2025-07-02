@@ -25,10 +25,18 @@ def get_gemini_model():
         system_instruction="You are a helpful AI assistant."
     )
 
-def get_gemini_response(messages):
+def stream_gemini_response(messages):
+    """
+    Calls the Gemini API with streaming enabled and yields response chunks.
+    """
     try:
         model = get_gemini_model()
-        response = model.generate_content(messages, stream=False)
-        return response.text
+        # stream=True makes generate_content return a generator
+        response_stream = model.generate_content(messages, stream=True)
+        for chunk in response_stream:
+            # Ensure that we only yield non-empty text parts
+            if chunk.text:
+                yield chunk.text
     except Exception as e:
-        return f"Gemini API error: {e}"
+        # In case of an API error, yield a formatted error message
+        yield f"Gemini API error: {e}"

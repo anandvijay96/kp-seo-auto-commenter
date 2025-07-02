@@ -1,56 +1,91 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const taskInput = document.getElementById('task-input');
-    const runAgentBtn = document.getElementById('run-agent-btn');
-    const loadingIndicator = document.getElementById('loading-indicator');
-    const resultContainer = document.getElementById('result-container');
-    const resultOutput = document.getElementById('result-output');
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatWindow = document.getElementById('chat-window');
+    const typingIndicator = document.getElementById('typing-indicator');
 
-    const apiUrl = 'https://kp-seo-auto-commenter.onrender.com/api/v1/agent/run';
+    chatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const message = chatInput.value.trim();
+        if (!message) return;
 
-    runAgentBtn.addEventListener('click', async () => {
-        const task = taskInput.value.trim();
-        if (!task) {
-            alert('Please enter a topic.');
-            return;
-        }
+        appendMessage(message, 'user');
+        chatInput.value = '';
+        chatInput.style.height = 'auto'; // Reset height
 
-        // Show loading state
-        loadingIndicator.classList.remove('hidden');
-        resultContainer.classList.add('hidden');
-        runAgentBtn.disabled = true;
+        showTypingIndicator();
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch('https://kp-seo-auto-commenter.onrender.com/api/v1/agent/run', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ task: task }),
+                body: JSON.stringify({ task: message }),
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
-            const data = await response.json();
-            
-            // Assuming the structure is { status: 'success', result: { status: 'success', output: '...' } }
-            if (data.result && data.result.output) {
-                resultOutput.textContent = data.result.output;
-            } else {
-                throw new Error('Invalid response format from the server.');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiMessageContainer = appendMessage('', 'ai');
+            let isFirstChunk = true;
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (isFirstChunk) {
+                    hideTypingIndicator();
+                    isFirstChunk = false;
+                }
+
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                aiMessageContainer.innerHTML += marked.parse(chunk);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
             }
 
-            resultContainer.classList.remove('hidden');
-
         } catch (error) {
+            hideTypingIndicator();
             console.error('Error running agent:', error);
-            resultOutput.textContent = `An error occurred: ${error.message}`;
-            resultContainer.classList.remove('hidden');
-        } finally {
-            // Hide loading state
-            loadingIndicator.classList.add('hidden');
-            runAgentBtn.disabled = false;
+            appendMessage('An error occurred. Please check the console for details.', 'ai', true);
         }
+    });
+
+    function appendMessage(content, type, isError = false) {
+        const messageWrapper = document.createElement('div');
+        messageWrapper.classList.add('chat-message', `${type}-message`);
+        
+        if (isError) {
+            messageWrapper.style.color = '#d9534f'; // Bootstrap's danger color
+        }
+
+        // Use marked.parse to render markdown content for AI messages
+        if (type === 'ai') {
+            messageWrapper.innerHTML = marked.parse(content);
+        } else {
+            messageWrapper.textContent = content;
+        }
+
+        chatWindow.appendChild(messageWrapper);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        return messageWrapper; // Return for streaming updates
+    }
+
+    function showTypingIndicator() {
+        typingIndicator.classList.remove('hidden');
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    function hideTypingIndicator() {
+        typingIndicator.classList.add('hidden');
+    }
+
+    // Auto-resize textarea
+    chatInput.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = `${chatInput.scrollHeight}px`;
     });
 });
