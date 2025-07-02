@@ -4,6 +4,7 @@ from langchain_core.prompts import PromptTemplate
 
 from app.core.config import settings
 from .toolbelt import get_tools
+from app.agents.gemini_client import get_gemini_response
 
 # This is a standard ReAct (Reasoning and Acting) prompt template.
 # It instructs the agent on how to think, act, and observe.
@@ -62,17 +63,7 @@ class Agent:
         self.agent_executor = create_agent_executor()
     
     async def run(self, data: dict) -> dict:
-        """
-        Run the agent with the provided input data.
-        
-        Args:
-            data: Dictionary containing:
-                - task: The task to perform
-                - parameters: Any additional parameters needed for the task
-        
-        Returns:
-            dict: The result of the agent's execution
-        """
+    # ... (mock logic for test environment)
         if settings.ENVIRONMENT == "test":
             return {
                 "status": "success",
@@ -82,24 +73,25 @@ class Agent:
                 },
                 "response": "This is a mock response for testing"
             }
-            
-        try:
-            # Get the task and parameters from the input data
-            task = data.get('task', '')
-            parameters = data.get('parameters', {})
-            
-            # Create the input for the agent
-            input_text = f"Task: {task}\nParameters: {parameters}"
-            
-            # Run the agent
-            result = await self.agent_executor.ainvoke({"input": input_text})
-            
-            return {
+
+    # Prepare messages for Gemini API
+        user_message = data.get("task", "")
+        conversation_history = data.get("history", [])
+
+        # Format as list of {"role": ..., "parts": [...]}
+        messages = []
+        for entry in conversation_history:
+            messages.append({"role": "user", "parts": [entry.get("user")]})
+            if entry.get("ai"):
+                messages.append({"role": "model", "parts": [entry.get("ai")]})
+        messages.append({"role": "user", "parts": [user_message]})
+
+        # Get Gemini response
+        output = get_gemini_response(messages)
+        return {
+            "status": "success",
+            "result": {
                 "status": "success",
-                "result": result.get("output", "No output from agent")
+                "output": output
             }
-        except Exception as e:
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+        }

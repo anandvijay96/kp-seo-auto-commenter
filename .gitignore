@@ -83,3 +83,6 @@ env/
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Foundational_Docs
+Foundational_Docs/
