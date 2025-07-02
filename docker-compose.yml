@@ -1,12 +1,13 @@
 services:
   app:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8500 --reload
     volumes:
       - .:/app
     ports:
-      - "8001:8000"
+      - "8500:8500"
     environment:
+      - ENVIRONMENT=${ENVIRONMENT}
       - DATABASE_URL=${DATABASE_URL}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:

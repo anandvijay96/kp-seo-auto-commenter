@@ -8,9 +8,9 @@ alembic
 psycopg2-binary
 
 # AI
-google-generativeai
+google-generativeai>=0.3.0
 langchain
-langchain-google-genai
+langchain-google-genai>=0.0.8
 langchain-community
 duckduckgo-search
 
