@@ -43,6 +43,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy application code
 COPY ./app /app/app
+COPY ./frontend /app/frontend
 
 # Expose port and define command
 # The PORT environment variable is set by Render. We default to 8000 for local use.
