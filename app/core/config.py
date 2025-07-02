@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8', extra='ignore')
@@ -10,8 +11,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     # RabbitMQ
-    RABBITMQ_USER: str
-    RABBITMQ_PASS: str
+    RABBITMQ_USER: Optional[str] = None
+    RABBITMQ_PASS: Optional[str] = None
 
     # Google Gemini
     GEMINI_API_KEY: str
