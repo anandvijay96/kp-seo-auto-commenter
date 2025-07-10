@@ -1,25 +1,42 @@
 # Web Framework
-fastapi
-uvicorn[standard]
+fastapi>=0.100.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+uvicorn[standard]>=0.22.0
+fastapi-cors==0.0.1
 
 # Database & ORM
-sqlalchemy
-alembic
-psycopg2-binary
+sqlalchemy>=2.0.0
+alembic>=1.11.1
+psycopg2-binary>=2.9.6
 
 # AI
-google-generativeai>=0.8.5
-langchain
-langchain-google-genai>=0.0.8
-langchain-community
-duckduckgo-search
+google-cloud-aiplatform>=1.36.0
+google-generativeai==0.5.2
+vertexai>=0.0.1
 
 # Utilities
-python-dotenv
-pydantic
-pydantic-settings
+python-dotenv>=1.0.0
 requests
 
 # Web Scraping
-playwright
-beautifulsoup4
+aiohttp>=3.8.0
+beautifulsoup4==4.12.3
+lxml>=4.9.0
+
+# Additional dependencies
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.5
+aiofiles>=0.7.0
+playwright==1.44.0
+langchain>=0.1.0
+langchain-google-vertexai>=1.0.0
+langchain-google-genai==1.0.6
+langchain-community>=0.0.10
+duckduckgo-search>=4.1.0
+readtime>=3.0.0
+chromadb==0.4.24 # Downgrade to match server version
+
+# Add sentence-transformers for explicit embedding functions
+sentence-transformers==2.7.0

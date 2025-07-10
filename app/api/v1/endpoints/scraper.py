@@ -1,44 +1,66 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from typing import Dict, AsyncGenerator
+from typing import Dict, AsyncGenerator, Optional, List
+from pydantic import BaseModel
 
 from app.scraper.scraper import scrape_page
-from app.agents.base import Agent
-from app.agents.tools import get_tools
+from app.agents.base import Agent, create_agent_executor
+from .agent import ChatMessage # Import ChatMessage for the request model
 
 router = APIRouter()
 
-async def stream_scrape_and_run_agent(data: Dict) -> AsyncGenerator[str, None]:
+class ScraperRequest(BaseModel):
+    url: str
+    task: str
+    history: Optional[List[ChatMessage]] = None
+
+async def stream_scrape_and_run_agent(request: ScraperRequest, agent: Agent) -> AsyncGenerator[str, None]:
     """
     Streams the agent's response after scraping a URL.
     """
-    url = data.get("url")
-    task = data.get("task")
-    history = data.get("history", [])
-
-    if not url or not task:
-        yield "Error: 'url' and 'task' are required fields."
-        return
+    url = request.url
+    task = request.task
+    history = [msg.dict() for msg in (request.history or [])]
 
     try:
         # 1. Scrape the content from the URL
         yield "Scraping page...\n"
-        scraped_content = await scrape_page(url)
-        if scraped_content.startswith("Error:"):
-            yield scraped_content
+        scrape_result = await scrape_page(url)
+        
+        if scrape_result["error"]:
+            yield f"Error: {scrape_result['error']}\n"
             return
         
         yield "Page scraped successfully. Generating response...\n"
 
-        # 2. Prepare the new task for the agent, including the scraped content
+        # 2. Prepare the new task for the agent, including the scraped content and metadata
+        metadata = scrape_result["metadata"]
+        content = scrape_result["content"]
+        
+        # Create a clear, structured context message with the scraped data.
+        scraped_context_message = f"""I have scraped the content from the URL '{url}'. Here is the data:
+
+Article Metadata:
+- Title: {metadata.get('title', 'N/A')}
+- Description: {metadata.get('description', 'N/A')}
+
+Full Article Content:
+---
+{content}
+---
+
+Now, please perform the following task: '{task}'"""
+
+        # The agent's 'run' method expects a 'task' and 'history'.
+        # We'll provide the context and the user's task in the 'task' field,
+        # and pass the existing conversation history separately.
         agent_task = {
-            "task": f"Based on the following article content, please perform this task: '{task}'.\n\nArticle Content:\n---\n{scraped_content}\n---",
+            "task": scraped_context_message,
             "history": history
         }
 
         # 3. Run the agent with the new task
-        agent = Agent(tools=get_tools())
-        async for chunk in agent.run(agent_task):
+        async for chunk in agent.run(task=scraped_context_message, history=history):
             yield chunk
 
     except Exception as e:
@@ -46,9 +68,17 @@ async def stream_scrape_and_run_agent(data: Dict) -> AsyncGenerator[str, None]:
 
 
 @router.post("/scrape-and-run")
-async def scrape_and_run(data: Dict):
+async def scrape_and_run(request: ScraperRequest, agent: Agent = Depends(create_agent_executor)) -> StreamingResponse:
     """
     Scrapes a URL and then runs the agent on the content.
     Returns a streaming response.
     """
-    return StreamingResponse(stream_scrape_and_run_agent(data), media_type="text/event-stream")
+    if not request.url:
+        raise HTTPException(status_code=400, detail="URL is required")
+    if not request.task:
+        raise HTTPException(status_code=400, detail="Task is required")
+        
+    return StreamingResponse(
+        stream_scrape_and_run_agent(request, agent), 
+        media_type="text/event-stream"
+    )

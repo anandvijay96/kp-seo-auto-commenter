@@ -86,3 +86,8 @@ Thumbs.db
 
 # Foundational_Docs
 Foundational_Docs/
+
+# Credentials and keys
+credentials/
+*-key.json
+*.key.json

@@ -1,28 +1,37 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from typing import Dict, AsyncGenerator
-from app.agents.base import Agent
-from app.agents.toolbelt import get_tools
+from typing import List, Optional
+from pydantic import BaseModel
+from app.agents.base import Agent, create_agent_executor
 
 router = APIRouter()
 
-async def stream_agent_response(data: Dict) -> AsyncGenerator[str, None]:
-    """
-    Runs the agent and streams the response back chunk by chunk.
-    """
-    try:
-        agent = Agent(tools=get_tools())
-        # The agent's run method is now expected to be an async generator
-        async for chunk in agent.run(data):
-            yield chunk
-    except Exception as e:
-        # In a real-world scenario, you'd want more robust error logging here.
-        # For now, we'll just yield an error message.
-        yield f"DEPLOYMENT_CHECK_V3 - Error: {str(e)}"
+class ChatMessage(BaseModel):
+    user: str
+    ai: Optional[str] = None
+
+class AgentRequest(BaseModel):
+    task: str
+    history: Optional[List[ChatMessage]] = None
 
 @router.post("/run")
-async def run_agent(data: Dict):
+async def run_agent(request: AgentRequest, agent: Agent = Depends(create_agent_executor)) -> StreamingResponse:
     """
     Run the agent with the provided input data and stream the results.
     """
-    return StreamingResponse(stream_agent_response(data), media_type="text/event-stream")
+    async def stream_generator():
+        try:
+            task = request.task
+            history = [msg.dict() for msg in (request.history or [])]
+
+            if not task:
+                yield "Error: Task cannot be empty."
+                return
+
+            async for chunk in agent.run(task, history):
+                yield chunk
+        except Exception as e:
+            # In a real-world scenario, you'd want more robust error logging here.
+            yield f"Error: {str(e)}"
+
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")

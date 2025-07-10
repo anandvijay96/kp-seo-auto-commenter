@@ -1,19 +1,38 @@
 services:
   - type: web
-    name: kp-seo-blog-automator
-    env: docker
+    name: kp-seo-auto-commenter
+    runtime: docker
+    region: singapore
     plan: free
-    healthCheckPath: / # Render uses this to check if your app is running
     envVars:
       - key: ENVIRONMENT
         value: production
-      - key: DATABASE_URL
+      - key: POSTGRES_SERVER
         fromDatabase:
-          name: kpseodb # Your correct DB name
-          property: connectionString
-      - key: GEMINI_API_KEY
-        sync: false # This marks it as a secret to be set only in the dashboard
+          name: kp-seo-db
+          property: host
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: kp-seo-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: kp-seo-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: kp-seo-db
+          property: database
+      - key: GCP_PROJECT_ID
+        value: kp-seo-blog-automator
+      - key: GCP_LOCATION
+        value: us-central1
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /app/credentials/kp-seo-agent-key.json
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 databases:
-  - name: kpseodb
+  - name: kp-seo-db
     plan: free
+    region: singapore

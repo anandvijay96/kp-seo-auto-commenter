@@ -1,7 +1,14 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
+# Load environment variables from .env file
+load_dotenv()
 
 from app.api.v1.api import api_router
 from app.core.config import settings

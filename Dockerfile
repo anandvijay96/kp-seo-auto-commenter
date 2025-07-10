@@ -1,5 +1,5 @@
 # Stage 1: Build stage to install dependencies
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Copy requirements and install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN playwright install
+RUN playwright install chromium
 
 # Stage 2: Final production stage
 FROM python:3.11-slim
@@ -32,6 +32,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgbm1 \
     libasound2 \
     libglib2.0-0 \
+    libx11-6 \
+    libxext6 \
+    libxrender1 \
+    libxtst6 \
+    fonts-liberation \
+    libappindicator3-1 \
+    xdg-utils \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
