@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KloudePortal SEO - New UI Concept</title>
+    <title>KloudPortal SEO - New UI Concept</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/assets/css/all.min.css" />
@@ -11,6 +11,28 @@
       :root {
         --primary-color: #631e50;
         --primary-color-hover: #4a163c;
+      }
+
+      /* Loading animation styles */
+      .loading-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 16px;
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(99, 30, 80, 0.1);
+        animation: fadeIn 0.3s ease-out forwards;
+      }
+
+      .loading-spinner {
+        color: var(--primary-color);
+      }
+
+      .loading-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--primary-color);
       }
 
       /* Custom styles for rendered Markdown */
@@ -75,96 +97,37 @@
         animation: fadeIn 0.3s ease-out forwards;
       }
 
-      /* New styles for the loading animation */
+      /* URL scraping specific styles */
       .status-container {
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 12px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: rgba(99, 30, 80, 0.95);
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 50;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.2s ease-in-out;
       }
-      .loading-animation {
-        width: 24px;
-        height: 24px;
-        position: relative;
+
+      .status-container.hidden {
+        display: none;
       }
-      .loading-animation svg {
-        width: 100%;
-        height: 100%;
-      }
+
       .status-text {
         font-size: 14px;
         font-weight: 500;
-        color: #4b5563;
-      }
-      .code-wrapper {
-        position: relative;
-        margin-top: 8px;
-      }
-      .code-container {
-        font-family: "Courier New", monospace;
-        font-size: 12px;
-        overflow: hidden;
-        width: 100%;
-        height: 84px; /* 3 lines * 28px */
-        position: relative;
-        scroll-behavior: smooth;
-        background-color: #f3f4f6; /* Added a light background */
-        border-radius: 4px;
-        padding-top: 4px; /* Add some padding */
-      }
-      .code-line {
-        display: flex;
-        height: 28px;
-        align-items: center;
-        padding: 0 8px;
-      }
-      .line-number {
-        color: #9ca3af;
-        padding-right: 12px;
-        user-select: none;
-        width: 24px;
-        text-align: right;
-      }
-      .line-content {
-        color: #1f2937;
-        flex: 1;
-        margin-left: 4px;
-      }
-      .gradient-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        pointer-events: none;
-        border-radius: 8px;
-        background: linear-gradient(
-          to bottom,
-          rgba(243, 244, 246, 0.9) 0%,
-          rgba(243, 244, 246, 0.5) 30%,
-          transparent 100%
-        );
+        color: white;
       }
 
-      @keyframes rotate-cw {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+      .status-container i {
+        color: white;
       }
-      @keyframes rotate-ccw {
-        from { transform: rotate(360deg); }
-        to { transform: rotate(0deg); }
-      }
-      .g-spin circle {
-        transform-origin: 120px 120px;
-      }
-      .g-spin circle:nth-child(1) { animation: rotate-cw 8s linear infinite; }
-      .g-spin circle:nth-child(2) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.2s; }
-      .g-spin circle:nth-child(3) { animation: rotate-cw 8s linear infinite; animation-delay: 0.3s; }
-      .g-spin circle:nth-child(4) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.1s; }
-      .g-spin circle:nth-child(5) { animation: rotate-cw 8s linear infinite; animation-delay: 0.3s; }
-      .g-spin circle:nth-child(6) { animation: rotate-ccw 8s linear infinite; animation-delay: 0.2s; }
 
-      /* Additional styles for standalone loading container */
+      /* New styles for the loading animation */
       .standalone-loading-container {
         background-color: #f9fafb;
         border-radius: 1rem;
@@ -207,7 +170,13 @@
       </div>
 
       <!-- Chat Messages -->
-      <div id="chat-container" class="flex-1 p-6 overflow-y-auto space-y-4">
+      <div id="chat-container" class="flex-1 p-6 overflow-y-auto space-y-4 relative">
+        <!-- Status Container -->
+        <div id="status-container" class="status-container hidden">
+          <i class="fas fa-spinner fa-spin"></i>
+          <span id="status-text" class="status-text">Generating response...</span>
+        </div>
+        
         <!-- Example AI Message -->
         <div class="chat-message flex items-start gap-3">
           <div
@@ -275,6 +244,9 @@
         const urlInputContainer = document.getElementById(
           "url-input-container"
         );
+        const chatContainer = document.getElementById("chat-container");
+        const generateBtn = document.getElementById("generate-btn");
+        let conversationHistory = [];
 
         // Auto-resize textarea logic
         const minHeight = 40; // Set a fixed min-height for the container
@@ -290,9 +262,6 @@
         });
 
         // --- Live Backend Chat Logic ---
-        const generateBtn = document.getElementById("generate-btn");
-        const chatContainer = document.getElementById("chat-container");
-        let conversationHistory = [];
         let loadingInterval = null;
 
         // --- New Animation Logic ---
@@ -413,13 +382,101 @@
           }
 
           initializeSequence();
-          loadingInterval = setInterval(advanceLine, 500); 
+          loadingInterval = setInterval(advanceLine, 250); // Faster animation update
         }
 
         function stopLoadingAnimation() {
           if (loadingInterval) {
             clearInterval(loadingInterval);
             loadingInterval = null;
+          }
+        }
+
+        // Status animation states
+        const SCRAPING_STATES = [
+            { status: "Scraping page...", icon: "fas fa-spinner" },
+            { status: "Page scraped successfully.", icon: "fas fa-check" },
+            { status: "Generating response...", icon: "fas fa-spinner" }
+        ];
+
+        let currentStateIndex = 0;
+        let statusInterval = null;
+
+        function showScrapingStatus() {
+            const statusContainer = document.getElementById('status-container');
+            const statusText = document.getElementById('status-text');
+            const statusIcon = statusContainer.querySelector('i');
+            
+            if (!statusContainer || !statusText || !statusIcon) {
+                console.warn('Status container elements not found');
+                return;
+            }
+            
+            // Remove hidden class and add visible immediately
+            statusContainer.classList.remove('hidden');
+            statusContainer.classList.add('visible');
+            currentStateIndex = 0;
+            
+            function updateStatus() {
+                if (currentStateIndex >= SCRAPING_STATES.length) {
+                    clearInterval(statusInterval);
+                    statusContainer.classList.remove('visible');
+                    // Wait for transition to complete before hiding
+                    setTimeout(() => {
+                        statusContainer.classList.add('hidden');
+                    }, 300);
+                    return;
+                }
+                
+                const currentState = SCRAPING_STATES[currentStateIndex];
+                statusText.textContent = currentState.status;
+                
+                // Update icon class, ensuring fa-spin is always present for spinner
+                const isSpinner = currentState.icon === 'fas fa-spinner';
+                statusIcon.className = `${currentState.icon} ${isSpinner ? 'fa-spin' : ''} text-[var(--primary-color)]`;
+                
+                // Only advance if not on the last state
+                if (currentStateIndex < SCRAPING_STATES.length - 1) {
+                    currentStateIndex++;
+                }
+            }
+            
+            updateStatus(); // Show first state immediately
+            statusInterval = setInterval(updateStatus, 2000); // Update every 2 seconds
+        }
+
+        function hideScrapingStatus() {
+            const statusContainer = document.getElementById('status-container');
+            if (!statusContainer) {
+                console.warn('Status container not found');
+                return;
+            }
+            statusContainer.classList.remove('visible');
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                statusContainer.classList.add('hidden');
+            }, 300);
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+        }
+
+        // Loading states
+        function showLoading(isUrlScraping = false) {
+          const statusContainer = document.getElementById('status-container');
+          const statusText = document.getElementById('status-text');
+          
+          if (statusContainer && statusText) {
+            statusText.textContent = isUrlScraping ? "Scraping page..." : "Generating response...";
+            statusContainer.classList.remove('hidden');
+          }
+        }
+
+        function hideLoading() {
+          const statusContainer = document.getElementById('status-container');
+          if (statusContainer) {
+            statusContainer.classList.add('hidden');
           }
         }
 
@@ -432,107 +489,43 @@
           let userMessageForUI = userInput;
           let agentTask = userInput;
 
-          // Update display and agent task if URL is provided
           if (blogUrl) {
             userMessageForUI = `Analyze this URL: ${blogUrl}\n\n${userInput}`;
             agentTask = `URL: ${blogUrl}\n\nTask: ${userInput || "Please analyze this URL and provide insights."}`;
           }
 
-          // Add user message to chat UI
+          // Add user message
           const userMessageHtml = `
-                    <div class="chat-message flex items-start gap-3 justify-end">
-                        <div class="bg-[var(--primary-color)] text-white p-3 rounded-lg max-w-lg">
-                            <p>${userMessageForUI.replace(/\n/g, "<br>")}</p>
-                        </div>
-                    </div>`;
+            <div class="chat-message flex items-start gap-3 justify-end">
+              <div class="bg-[var(--primary-color)] text-white p-3 rounded-lg max-w-lg">
+                <p>${userMessageForUI.replace(/\n/g, "<br>")}</p>
+              </div>
+            </div>`;
           chatContainer.insertAdjacentHTML("beforeend", userMessageHtml);
 
+          // Clear inputs and disable button
           textarea.value = "";
           document.getElementById("blog-url").value = "";
           urlInputContainer.classList.add("hidden");
           chatContainer.scrollTop = chatContainer.scrollHeight;
           generateBtn.disabled = true;
 
-          const loadingId = `loading-${Date.now()}`;
-          let loadingHtml = "";
-          
-          // Only show loading animation for URL scraping
-          if (blogUrl) {
-            loadingHtml = `
-              <div id="${loadingId}" class="standalone-loading-container">
-                <div class="loading-indicator-header">
-                  <i class="fas fa-globe text-[var(--primary-color)]"></i>
-                  <span>Processing URL</span>
-                </div>
-                <div class="status-container">
-                  <div class="loading-animation">
-                    <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Loading progress">
-                      <title>Loading Progress Indicator</title>
-                      <defs>
-                        <mask id="progress-mask">
-                          <rect width="240" height="240" fill="black" />
-                          <circle cx="120" cy="120" r="110" fill="white" />
-                        </mask>
-                        <linearGradient id="g1" gradientTransform="rotate(90)">
-                          <stop offset="0%" stop-color="#4285F4" />
-                          <stop offset="100%" stop-color="#34A853" />
-                        </linearGradient>
-                        <linearGradient id="g2" gradientTransform="rotate(90)">
-                          <stop offset="0%" stop-color="#FBBC05" />
-                          <stop offset="100%" stop-color="#EA4335" />
-                        </linearGradient>
-                      </defs>
-                      <g class="g-spin" mask="url(#progress-mask)">
-                        <circle r="90" cx="120" cy="120" stroke="url(#g1)" stroke-width="20" />
-                        <circle r="90" cx="120" cy="120" stroke="url(#g2)" stroke-width="20" pathLength="1" stroke-dasharray="0.5 0.5" />
-                        <circle r="70" cx="120" cy="120" stroke="#FBBC05" opacity="0.95" />
-                        <circle r="50" cx="120" cy="120" stroke="#EA4335" opacity="0.95" />
-                        <circle r="70" cx="120" cy="120" stroke="#FFEB3B" opacity="0.95" />
-                        <circle r="50" cx="120" cy="120" stroke="#FF4081" opacity="0.95" />
-                      </g>
-                    </svg>
-                  </div>
-                  <span class="status-text" id="status-text-${loadingId}">Initializing...</span>
-                </div>
-                <div class="code-wrapper">
-                  <div class="code-container" id="code-container-${loadingId}">
-                    <div id="lines-container-${loadingId}"></div>
-                  </div>
-                  <div class="gradient-overlay"></div>
-                </div>
-              </div>`;
-
-            chatContainer.insertAdjacentHTML("beforeend", loadingHtml);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            startLoadingAnimation(loadingId, true);
-          }
+          // Show loading animation
+          showLoading(blogUrl ? true : false);
 
           const aiResponseId = `ai-response-${Date.now()}`;
-          
-          // We won't create the AI response container yet - we'll create it only when we get the response
-          const aiResponseContainerHtml = `
-                    <div class="chat-message flex items-start gap-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <i class="fas fa-robot text-gray-600"></i>
-                        </div>
-                        <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
-                            <div id="${aiResponseId}" class="prose-styles"></div>
-                        </div>
-                    </div>`;
-
           let aiResponseContainer = null;
-          const aiMessageElementId = `#${aiResponseId}`;
 
           try {
             let endpoint = "/api/v1/agent/run";
             let body = {
-                task: agentTask,
-                history: conversationHistory,
+              task: agentTask,
+              history: conversationHistory,
             };
 
             if (blogUrl) {
-                endpoint = "/api/v1/scraper/scrape-and-run";
-                body = { url: blogUrl, task: agentTask, history: conversationHistory };
+              endpoint = "/api/v1/scraper/scrape-and-run";
+              body = { url: blogUrl, task: agentTask, history: conversationHistory };
             }
 
             const response = await fetch(endpoint, {
@@ -541,60 +534,94 @@
               body: JSON.stringify(body),
             });
 
-            // Stop and remove loading animation
-            stopLoadingAnimation();
-            const loadingElement = document.getElementById(loadingId);
-            if (loadingElement) {
-                loadingElement.remove();
+            // Handle cases where the backend might send a JSON error instead of a stream
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+              const errorData = await response.json();
+              console.error("Received JSON instead of stream:", errorData);
+              hideLoading();
+              const errorMessage = errorData.detail || JSON.stringify(errorData);
+              const errorHtml = `
+                <div class="chat-message flex items-start gap-3">
+                  <div class="w-8 h-8 bg-[var(--primary-color)] text-white flex items-center justify-center rounded-full font-bold text-sm">
+                    AI
+                  </div>
+                  <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
+                    <p>An error occurred: ${errorMessage}</p>
+                  </div>
+                </div>`;
+              chatContainer.insertAdjacentHTML("beforeend", errorHtml);
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+              return;
             }
-
-            // Only now add the AI response container, after removing loading animation
-            chatContainer.insertAdjacentHTML("beforeend", aiResponseContainerHtml);
-            aiResponseContainer = document.querySelector(aiMessageElementId);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            if (!response.ok || !response.body) {
-              aiResponseContainer.textContent =
-                "Error: Could not get a response from the server.";
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
+  
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let fullResponse = "";
+            let isFirstChunk = true;
 
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
+              
+              if (isFirstChunk) {
+                // Only create AI message container on first chunk
+                chatContainer.insertAdjacentHTML("beforeend", `
+                  <div class="chat-message flex items-start gap-3">
+                    <div class="w-8 h-8 bg-[var(--primary-color)] text-white flex items-center justify-center rounded-full font-bold text-sm">
+                      AI
+                    </div>
+                    <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
+                      <div id="${aiResponseId}" class="prose-styles"></div>
+                    </div>
+                  </div>`);
+                aiResponseContainer = document.getElementById(aiResponseId);
+                isFirstChunk = false;
+              }
+              
+              if (done) {
+                hideLoading(); // Only hide loading when we're completely done
+                break;
+              }
+              
               const chunk = decoder.decode(value, { stream: true });
               fullResponse += chunk;
-              if (fullResponse.startsWith("Gemini API error:")) {
-                aiResponseContainer.innerHTML = `<p>I'm sorry, I encountered a technical issue from the AI service. Please try your request again.</p><p class="text-xs text-gray-500 mt-2">Details: ${fullResponse}</p>`;
-              } else {
-                aiResponseContainer.innerHTML = marked.parse(fullResponse);
+              
+              // Update the response content, but keep loading state until done
+              if (aiResponseContainer) {
+                if (fullResponse.startsWith("Gemini API error:")) {
+                  aiResponseContainer.innerHTML = `<p>I'm sorry, I encountered a technical issue from the AI service. Please try your request again.</p><p class="text-xs text-gray-500 mt-2">Details: ${fullResponse}</p>`;
+                } else {
+                  // Always try to render the response, even if it contains status messages
+                  aiResponseContainer.innerHTML = marked.parse(fullResponse);
+                }
+                chatContainer.scrollTop = chatContainer.scrollHeight;
               }
-              chatContainer.scrollTop = chatContainer.scrollHeight;
             }
 
+            // Only store the actual response in history, not the status messages
+            const finalResponse = fullResponse.replace("Scraping page...", "").trim();
             conversationHistory.push({
               user: agentTask,
-              ai: fullResponse,
+              ai: finalResponse,
             });
+
           } catch (error) {
             console.error("Fetch error:", error);
-            stopLoadingAnimation();
-            if (document.getElementById(loadingId)) {
-              document.getElementById(loadingId).remove();
-            }
+            hideLoading();
 
             if (!aiResponseContainer) {
-              chatContainer.insertAdjacentHTML(
-                "beforeend",
-                aiResponseContainerHtml
-              );
-              aiResponseContainer = document.querySelector(aiMessageElementId);
+              const errorHtml = `
+                <div class="chat-message flex items-start gap-3">
+                  <div class="w-8 h-8 bg-[var(--primary-color)] text-white flex items-center justify-center rounded-full font-bold text-sm">
+                    AI
+                  </div>
+                  <div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-lg">
+                    <p>An error occurred while fetching the response. Please try again.</p>
+                    <p class="text-xs text-gray-500 mt-2">${error.message}</p>
+                  </div>
+                </div>`;
+              chatContainer.insertAdjacentHTML("beforeend", errorHtml);
             }
-            aiResponseContainer.innerHTML = `<p>An error occurred while fetching the response. Please check the console for details.</p><p class="text-xs text-gray-500 mt-2">${error.message}</p>`;
           } finally {
             generateBtn.disabled = false;
           }
