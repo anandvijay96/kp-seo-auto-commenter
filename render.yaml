@@ -29,7 +29,6 @@ services:
         value: us-central1
       - key: GOOGLE_APPLICATION_CREDENTIALS
         value: /app/credentials/kp-seo-agent-key.json
-    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 databases:
