@@ -12,17 +12,14 @@ load_dotenv()
 
 from app.api.v1.api import api_router
 from app.core.config import settings
+from app.api.v1.endpoints import agent as agent_v1
 print("ENVIRONMENT:", settings.ENVIRONMENT)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="API for managing blog discovery, comment generation, and submission.",
-    version="0.1.0",
+    version=settings.PROJECT_VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
-
-# Mount the 'frontend' directory to serve static files like CSS and JS
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
 # Add a new endpoint to serve the new_ui.html file
 @app.get("/new-ui")
@@ -33,6 +30,11 @@ async def read_new_ui():
 @app.get("/", response_class=FileResponse)
 async def read_index():
     return FileResponse("frontend/index.html")
+
+# Add a health endpoint
+@app.get("/health", status_code=200)
+def health_check():
+    return {"status": "ok"}
 
 # Add CORS middleware
 if settings.BACKEND_CORS_ORIGINS:
@@ -46,9 +48,8 @@ if settings.BACKEND_CORS_ORIGINS:
 
 app.include_router(api_router, prefix="/api/v1")
 
-@app.get("/health", status_code=200)
-def health_check():
-    return {"status": "ok"}
+# Serve frontend
+app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
