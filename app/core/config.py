@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     PROJECT_NAME: str = "KP SEO Auto Commenter"
+    PROJECT_VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
     # CORS settings
@@ -42,8 +43,12 @@ class Settings(BaseSettings):
     
     # Gemini API settings
     GEMINI_API_KEY: Optional[str] = None  # Legacy API key for fallback
-    GEMINI_MODEL: str = "gemini-1.0-pro"  # Using stable Vertex AI model
+    GEMINI_MODEL: str = "gemini-2.5-pro"  # Using stable Vertex AI model
     USE_VERTEX_AI: bool = True  # Set to True to use Vertex AI instead of direct Gemini API
+    
+    # ChromaDB Vector Store settings
+    CHROMA_HOST: str = "chromadb"
+    CHROMA_PORT: int = 8000
     
     @property
     def GCP_CREDENTIALS(self):
@@ -85,14 +90,12 @@ class Settings(BaseSettings):
         super().__init__(**kwargs)
         
         # Set credentials path based on environment
-        if self.ENVIRONMENT == "development":
-            # Local development path - use project root
-            self.GOOGLE_APPLICATION_CREDENTIALS = str(PROJECT_ROOT / "credentials" / "kp-seo-agent-key.json")
-        else:
-            # Docker/production path
-            self.GOOGLE_APPLICATION_CREDENTIALS = "/app/credentials/kp-seo-agent-key.json"
+        self.GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         
-        logger.info(f"Set GOOGLE_APPLICATION_CREDENTIALS to: {self.GOOGLE_APPLICATION_CREDENTIALS}")
+        if not self.GOOGLE_APPLICATION_CREDENTIALS:
+            logger.error("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set!")
+        else:
+            logger.info(f"Set GOOGLE_APPLICATION_CREDENTIALS to: {self.GOOGLE_APPLICATION_CREDENTIALS}")
         
         # Construct database URI if not provided
         if not self.SQLALCHEMY_DATABASE_URI:

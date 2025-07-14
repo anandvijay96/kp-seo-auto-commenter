@@ -16,7 +16,15 @@ class VectorMemory:
     """
     A class to manage agent memory using a ChromaDB vector store.
     """
-    def __init__(self, host="chromadb", port=8000, collection_name="agent_memory"):
+    def __init__(self, host=None, port=None, collection_name="agent_memory"):
+        # Import here to avoid circular imports
+        from app.core.config import settings
+        
+        # Use settings if host/port not provided
+        if host is None:
+            host = settings.CHROMA_HOST
+        if port is None:
+            port = settings.CHROMA_PORT
         """
         Initializes the connection to the ChromaDB server and gets or creates a collection.
         """

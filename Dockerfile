@@ -56,6 +56,7 @@ COPY --from=builder /root/.cache/ms-playwright /root/.cache/ms-playwright
 # Copy application code
 COPY ./app /app/app
 COPY ./frontend /app/frontend
+COPY ./credentials /app/credentials
 
 # Expose port and define command
 # The PORT environment variable is set by Render. We default to 8000 for local use.
